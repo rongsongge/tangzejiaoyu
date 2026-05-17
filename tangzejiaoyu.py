@@ -325,7 +325,7 @@ elif menu == "👨‍🏫 老师介绍":
 
     col1, col2 = st.columns(2)
     with col1:
-        st.subheader("👩‍💼 李老师（办公应用）")
+        st.subheader("👩‍💼 周老师（办公应用）")
         st.write("✅ 办公软件教学10年经验\n✅ 擅长Word/Excel/PPT/飞书文档高级应用\n✅ 曾为多家企业做办公内训")
         st.info("教学风格：耐心细致，零基础也能听懂")
     with col2:
@@ -345,11 +345,11 @@ elif menu == "👨‍🏫 老师介绍":
 
     col5, col6 = st.columns(2)
     with col5:
-        st.subheader("⚙️ 刘老师（机电绘图）")
+        st.subheader("⚙️ 董老师（机电绘图）")
         st.write("✅ 机械机电行业10年经验\n✅ 精通CAD/CREO/SW/EPLAN\n✅ 工厂一线技术出身")
         st.info("教学风格：贴合工厂，实用性强")
     with col6:
-        st.subheader("💻 周老师（网页制作）")
+        st.subheader("💻 葛老师（网页制作）")
         st.write("✅ 网页开发行业6年经验\n✅ 精通DW/VSCode/Python+Streamlit\n✅ 个人网站、企业官网实战教学")
         st.info("教学风格：通俗易懂，手把手教你做网站")
 
@@ -472,7 +472,7 @@ st.sidebar.markdown("### 📞 联系我们")
 st.sidebar.write("☎ 电话：020-82709166")
 st.sidebar.write("🏫 地址：广州市增城区新塘镇")
 st.sidebar.write("💻 塘泽教育 · 学会为止")
-st.sidebar.write("📱 微信：同手机号")
+st.sidebar.write("📱 微信：同手机号18022864206")
 
 st.markdown("---")
 col_visit = st.columns([1, 2, 1])
