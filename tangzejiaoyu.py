@@ -325,7 +325,7 @@ elif menu == "👨‍🏫 老师介绍":
 
     col1, col2 = st.columns(2)
     with col1:
-        st.subheader("👩‍💼 周老师（办公应用）")
+        st.subheader("👩‍💼 萧老师（办公应用）")
         st.write("✅ 办公软件教学10年经验\n✅ 擅长Word/Excel/PPT/飞书文档高级应用\n✅ 曾为多家企业做办公内训")
         st.info("教学风格：耐心细致，零基础也能听懂")
     with col2:
@@ -335,7 +335,7 @@ elif menu == "👨‍🏫 老师介绍":
 
     col3, col4 = st.columns(2)
     with col3:
-        st.subheader("🎬 陈老师（视频/建模）")
+        st.subheader("🎬 周老师（视频/建模）")
         st.write("✅ 影视后期三维行业7年经验\n✅ 精通剪映/PR/AE/C4D/Blender\n✅ 电商短视频项目实战")
         st.info("教学风格：紧跟行业，实用为主")
     with col4:
