@@ -261,8 +261,8 @@ elif menu == "🌐 网页制作":
     st.info("从入门基础到实战，学会自己做网站！")
     st.subheader("📖 课程内容")
     st.write("""
-    1️⃣ **入门基础 DW**：Dreamweaver 软件使用、HTML基础标签、CSS样式、简单网页制作  
-    2️⃣ **代码编辑 VSCode**：VSCode 安装配置、插件使用、HTML/CSS/JS代码编写、网页调试  
+    1️⃣ **入门基础 DW**：Dreamweaver 软件使用、HTML基础标签、CSS样式、JS代码、简单网页制作  
+    2️⃣ **代码编辑 VSCode**：VSCode 安装配置、插件使用、HTML/CSS/JS/vite+vue3代码编写、网页调试、部署上线 
     3️⃣ **Python+Streamlit网页制作**：Python基础语法、Streamlit 框架使用、表单制作、数据存储、部署上线  
     """)
     st.subheader("🎓 学完可从事")
