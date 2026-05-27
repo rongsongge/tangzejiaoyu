@@ -1,0 +1,12 @@
+# 密钥文件
+.streamlit/
+*.toml
+
+# 本地旧数据文件（旧代码遗留）
+*.csv
+*.txt
+
+# 系统缓存
+__pycache__/
+*.pyc
+.DS_Store

@@ -1,39 +1,30 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime
-import os
+import requests
 
-# ====================== 终极隐藏版：本地运行也能彻底隐藏Deploy按钮 ======================
+# ====================== 隐藏界面元素 ======================
 st.markdown("""
 <style>
-/* 1. 隐藏右上角三点菜单 */
 #MainMenu {visibility: hidden !important;}
-
-/* 2. 隐藏右上角Deploy按钮（本地模式） */
-div[data-testid="stDeployButton"] {
-    display: none !important;
-    visibility: hidden !important;
-    opacity: 0 !important;
-    pointer-events: none !important;
-}
-
-/* 3. 隐藏顶部红色装饰条 */
+div[data-testid="stDeployButton"] {display: none !important;}
 [data-testid="stDecoration"] {display: none !important;}
-
-/* 4. 隐藏底部版权信息 */
 footer {visibility: hidden !important;}
-
-/* 5. 保留侧边栏开关按钮 */
-button[kind="secondary"][data-testid="baseButton-secondary"] {
-    visibility: visible !important;
-    display: block !important;
-}
 </style>
 """, unsafe_allow_html=True)
 
-# ----------------------
-# 页面基础设置
-# ----------------------
+# ====================== 从 Streamlit Secrets 读取飞书配置 ======================
+try:
+    FEISHU_APP_ID = st.secrets["feishu"]["app_id"]
+    FEISHU_APP_SECRET = st.secrets["feishu"]["app_secret"]
+    FEISHU_APP_TOKEN = st.secrets["feishu"]["app_token"]
+    FEISHU_TABLE_SIGN = st.secrets["feishu"]["table_sign"]
+    FEISHU_TABLE_COUNT = st.secrets["feishu"]["table_count"]
+except:
+    st.error("飞书配置读取失败，请检查密钥配置！")
+    st.stop()
+
+# ====================== 页面基础设置 ======================
 st.set_page_config(
     page_title="塘泽教育",
     page_icon="💻",
@@ -41,58 +32,125 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# 管理员密码
 ADMIN_PASSWORD = "045571"
 
-# 初始化状态
+# 初始化会话状态
 if "admin_logged_in" not in st.session_state:
     st.session_state.admin_logged_in = False
-if "edit_idx" not in st.session_state:
-    st.session_state.edit_idx = None
+if "visited" not in st.session_state:
+    st.session_state.visited = False
 
-# ----------------------
-# 访问人数统计
-# ----------------------
-if "visit_count" not in st.session_state:
-    if not os.path.exists("visit_count.txt"):
-        with open("visit_count.txt", "w") as f:
-            f.write("0")
-    with open("visit_count.txt", "r") as f:
-        count = int(f.read())
-    count += 1
-    with open("visit_count.txt", "w") as f:
-        f.write(str(count))
-    st.session_state.visit_count = count
-else:
-    count = st.session_state.visit_count
+# ====================== 飞书通用鉴权 ======================
+def get_tenant_token():
+    url = "https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal"
+    payload = {"app_id": FEISHU_APP_ID, "app_secret": FEISHU_APP_SECRET}
+    res = requests.post(url, json=payload)
+    return res.json().get("tenant_access_token", "")
 
-# ----------------------
-# 读取报名数据通用函数（电话列强制为字符串，修复报错）
-# ----------------------
-def load_sign_data():
-    if os.path.exists("报名记录.csv"):
-        return pd.read_csv("报名记录.csv", encoding="utf-8-sig", dtype={"电话": str})
+# ====================== 1. 报名记录 接口函数 ======================
+def get_all_sign_records():
+    token = get_tenant_token()
+    url = f"https://open.feishu.cn/open-apis/bitable/v1/apps/{FEISHU_APP_TOKEN}/tables/{FEISHU_TABLE_SIGN}/records?page_size=1000"
+    headers = {"Authorization": f"Bearer {token}"}
+    res = requests.get(url, headers=headers)
+    items = res.json().get("data", {}).get("items", [])
+    rows = []
+    for item in items:
+        f = item["fields"]
+        rows.append({
+            "提交时间": f.get("提交时间", ""),
+            "姓名": f.get("姓名", ""),
+            "电话": f.get("电话", ""),
+            "意向课程": f.get("意向课程", ""),
+            "电脑基础": f.get("电脑基础", ""),
+            "备注": f.get("备注", ""),
+            "record_id": item["id"]
+        })
+    return pd.DataFrame(rows)
+
+def add_sign_record(name, phone, course, level, remark):
+    token = get_tenant_token()
+    url = f"https://open.feishu.cn/open-apis/bitable/v1/apps/{FEISHU_APP_TOKEN}/tables/{FEISHU_TABLE_SIGN}/records"
+    headers = {"Authorization": f"Bearer {token}"}
+    fields = {
+        "提交时间": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "姓名": name,
+        "电话": phone,
+        "意向课程": course,
+        "电脑基础": level,
+        "备注": remark
+    }
+    requests.post(url, json={"fields": fields}, headers=headers)
+
+def update_sign_record(rid, name, phone, course, level, remark):
+    token = get_tenant_token()
+    url = f"https://open.feishu.cn/open-apis/bitable/v1/apps/{FEISHU_APP_TOKEN}/tables/{FEISHU_TABLE_SIGN}/records/{rid}"
+    headers = {"Authorization": f"Bearer {token}"}
+    fields = {
+        "姓名": name,
+        "电话": phone,
+        "意向课程": course,
+        "电脑基础": level,
+        "备注": remark
+    }
+    requests.put(url, json={"fields": fields}, headers=headers)
+
+def delete_sign_record(rid):
+    token = get_tenant_token()
+    url = f"https://open.feishu.cn/open-apis/bitable/v1/apps/{FEISHU_APP_TOKEN}/tables/{FEISHU_TABLE_SIGN}/records/{rid}"
+    headers = {"Authorization": f"Bearer {token}"}
+    requests.delete(url, headers=headers)
+
+def clear_all_sign():
+    df = get_all_sign_records()
+    for rid in df["record_id"]:
+        delete_sign_record(rid)
+
+# ====================== 2. 访问计数 接口函数 ======================
+def get_visit_num():
+    token = get_tenant_token()
+    url = f"https://open.feishu.cn/open-apis/bitable/v1/apps/{FEISHU_APP_TOKEN}/tables/{FEISHU_TABLE_COUNT}/records"
+    headers = {"Authorization": f"Bearer {token}"}
+    res = requests.get(url, headers=headers)
+    items = res.json().get("data", {}).get("items", [])
+    if items:
+        return int(items[0]["fields"].get("计数", 0)), items[0]["id"]
+    return 0, ""
+
+def add_visit():
+    token = get_tenant_token()
+    curr, rid = get_visit_num()
+    new_num = curr + 1
+    url = f"https://open.feishu.cn/open-apis/bitable/v1/apps/{FEISHU_APP_TOKEN}/tables/{FEISHU_TABLE_COUNT}/records"
+    headers = {"Authorization": f"Bearer {token}"}
+    if rid:
+        # 更新已有记录
+        requests.put(f"{url}/{rid}", json={"fields":{"计数": new_num}}, headers=headers)
     else:
-        return pd.DataFrame(columns=["提交时间","姓名","电话","意向课程","电脑基础","备注"])
+        # 新建第一条记录
+        requests.post(url, json={"fields":{"计数": new_num}}, headers=headers)
+    return new_num
 
-def save_sign_data(df):
-    df["电话"] = df["电话"].astype(str)
-    df.to_csv("报名记录.csv", index=False, encoding="utf-8-sig")
+# 单次页面访问只+1，刷新不重复累加
+if not st.session_state.visited:
+    total_count = add_visit()
+    st.session_state.visited = True
+else:
+    total_count, _ = get_visit_num()
 
-# ----------------------
-# 顶部LOGO
-# ----------------------
+# ====================== 页面主体内容（完全保留原有功能） ======================
 col_logo, col_title = st.columns([1, 6])
 with col_logo:
-    st.image("logo.png", width=150)
+    try:
+        st.image("logo.png", width=150)
+    except:
+        pass
 with col_title:
     st.title("💻 塘泽教育 — 专业电脑基础技能培训")
 
 st.markdown("---")
 
-# ----------------------
 # 侧边栏导航
-# ----------------------
 st.sidebar.title("🏠 导航菜单")
 menu = st.sidebar.radio(
     "请选择查看项目：",
@@ -110,13 +168,10 @@ menu = st.sidebar.radio(
      "🔐 管理员后台")
 )
 
-# ----------------------
-# 1. 学校首页
-# ----------------------
+# 首页
 if menu == "🏠 学校首页":
     st.title("💻 塘泽教育 — 欢迎您！")
     st.markdown("---")
-
     col1, col2 = st.columns([2, 1])
     with col1:
         st.subheader("🎯 学校简介")
@@ -146,9 +201,7 @@ if menu == "🏠 学校首页":
     🌐 **网页制作类**：DW、VSCode、Python+Streamlit  
     """)
 
-# ----------------------
-# 2. 办公应用
-# ----------------------
+# 办公应用
 elif menu == "📝 办公应用":
     st.title("📝 办公应用培训课程")
     st.markdown("---")
@@ -165,9 +218,7 @@ elif menu == "📝 办公应用":
     st.subheader("🎓 学完可从事")
     st.success("文员、行政、出纳、数据统计、办公室内勤、企业协同办公专员等岗位")
 
-# ----------------------
-# 3. 平面设计
-# ----------------------
+# 平面设计
 elif menu == "🎨 平面设计":
     st.title("🎨 平面设计培训课程")
     st.markdown("---")
@@ -183,9 +234,7 @@ elif menu == "🎨 平面设计":
     st.subheader("🎓 学完可从事")
     st.success("广告设计师、图文店、美工、电商设计、自由接单、排版设计师")
 
-# ----------------------
-# 4. 视频制作
-# ----------------------
+# 视频制作
 elif menu == "🎬 视频制作":
     st.title("🎬 视频制作培训课程")
     st.markdown("---")
@@ -200,9 +249,7 @@ elif menu == "🎬 视频制作":
     st.subheader("🎓 学完可从事")
     st.success("短视频剪辑师、影视后期、新媒体运营、广告制作、自由接单、自媒体创作者")
 
-# ----------------------
-# 5. 产品建模
-# ----------------------
+# 产品建模
 elif menu == "📦 产品建模":
     st.title("📦 产品建模培训课程")
     st.markdown("---")
@@ -216,9 +263,7 @@ elif menu == "📦 产品建模":
     st.subheader("🎓 学完可从事")
     st.success("电商3D美工、产品渲染师、三维建模师、动画制作、游戏建模")
 
-# ----------------------
-# 6. 室内设计
-# ----------------------
+# 室内设计
 elif menu == "🏠 室内设计":
     st.title("🏠 室内设计培训课程")
     st.markdown("---")
@@ -233,9 +278,7 @@ elif menu == "🏠 室内设计":
     st.subheader("🎓 学完可从事")
     st.success("室内设计师、全屋定制设计师、装修绘图员、效果图设计师")
 
-# ----------------------
-# 7. 机电绘图
-# ----------------------
+# 机电绘图
 elif menu == "⚙️ 机电绘图":
     st.title("⚙️ 机电绘图培训课程")
     st.markdown("---")
@@ -251,9 +294,7 @@ elif menu == "⚙️ 机电绘图":
     st.subheader("🎓 学完可从事")
     st.success("机械设计师、电气绘图员、设备设计、模具设计、钣金设计")
 
-# ----------------------
-# 8. 网页制作
-# ----------------------
+# 网页制作
 elif menu == "🌐 网页制作":
     st.title("🌐 网页制作培训课程")
     st.markdown("---")
@@ -268,13 +309,10 @@ elif menu == "🌐 网页制作":
     st.subheader("🎓 学完可从事")
     st.success("个人网站搭建、企业官网制作、数据可视化网页、接单制作小程序/网站")
 
-# ----------------------
-# 9. 课程价格
-# ----------------------
+# 课程价格
 elif menu == "💰 课程价格":
     st.title("💰 课程价格表")
     st.markdown("---")
-
     price_data = {
         "课程类别": ["办公应用", "办公应用", "办公应用", "办公应用", "办公应用",
                      "平面设计", "平面设计", "平面设计", "平面设计",
@@ -316,13 +354,10 @@ elif menu == "💰 课程价格":
     st.dataframe(df_price, use_container_width=True)
     st.warning("⚠️ 价格可根据活动调整，咨询老师获取最新优惠！")
 
-# ----------------------
-# 10. 老师介绍
-# ----------------------
+# 老师介绍
 elif menu == "👨‍🏫 老师介绍":
     st.title("👨‍🏫 专业师资团队")
     st.markdown("---")
-
     col1, col2 = st.columns(2)
     with col1:
         st.subheader("👩‍💼 萧老师（办公应用）")
@@ -353,13 +388,10 @@ elif menu == "👨‍🏫 老师介绍":
         st.write("✅ 网页开发行业6年经验\n✅ 精通DW/VSCode/Python+Streamlit\n✅ 个人网站、企业官网实战教学")
         st.info("教学风格：通俗易懂，手把手教你做网站")
 
-# ----------------------
-# 11. 在线报名
-# ----------------------
+# 在线报名
 elif menu == "📝 在线报名":
     st.title("📝 塘泽教育 — 在线报名")
     st.markdown("---")
-
     with st.form("报名表单"):
         name = st.text_input("您的姓名 *")
         phone = st.text_input("联系电话 *")
@@ -367,106 +399,67 @@ elif menu == "📝 在线报名":
         level = st.radio("电脑基础情况", ["零基础", "有一点基础", "有一定基础"])
         remark = st.text_area("留言/问题（可选）")
         submit = st.form_submit_button("✅ 提交报名信息")
-
     if submit:
         if not name or not phone:
             st.error("❌ 姓名和电话为必填项，请填写完整！")
         else:
-            df = load_sign_data()
-            new_data = pd.DataFrame({
-                "提交时间": [datetime.now().strftime("%Y-%m-%d %H:%M:%S")],
-                "姓名": [name],
-                "电话": [str(phone)],
-                "意向课程": [course],
-                "电脑基础": [level],
-                "备注": [remark]
-            })
-            df = pd.concat([df, new_data], ignore_index=True)
-            save_sign_data(df)
+            add_sign_record(name, phone, course, level, remark)
             st.success("✅ 提交成功！我们会尽快联系您！")
             st.balloons()
 
-# ----------------------
-# 12. 管理员后台
-# ----------------------
+# 管理员后台
 elif menu == "🔐 管理员后台":
     st.title("🔐 管理员后台 — 报名记录管理")
     st.markdown("---")
-
     if not st.session_state.admin_logged_in:
-        st.subheader("请输入管理员密码")
         pwd = st.text_input("密码", type="password")
         if st.button("登录"):
             if pwd == ADMIN_PASSWORD:
                 st.session_state.admin_logged_in = True
                 st.rerun()
             else:
-                st.error("❌ 密码错误！")
+                st.error("密码错误")
     else:
-        df = load_sign_data()
+        df = get_all_sign_records()
         if df.empty:
             st.info("暂无报名记录")
         else:
-            st.subheader("📋 所有报名记录")
-            st.dataframe(df, use_container_width=True)
-
-            st.download_button("📥 下载Excel表格", 
-                               df.to_csv(index=False, encoding="utf-8-sig"), 
-                               "塘泽教育报名记录.csv")
+            st.dataframe(df.drop(columns=["record_id"]), use_container_width=True)
+            st.download_button("📥 导出Excel", df.to_csv(index=False, encoding="utf-8-sig"), "报名记录.csv")
             st.markdown("---")
-
-            st.subheader("✏️ 修改 / 🗑 删除 单条记录")
-            row_select = st.selectbox("选择要操作的记录序号", list(range(len(df))))
-            row = df.iloc[row_select]
-
+            st.subheader("修改 / 删除 单条记录")
+            idx = st.selectbox("选择记录", range(len(df)))
+            row = df.iloc[idx]
             with st.form("edit_form"):
-                edit_name = st.text_input("姓名", value=row["姓名"])
-                edit_phone = st.text_input("电话", value=str(row["电话"]))
-                edit_course = st.selectbox("意向课程", 
-                    ["办公应用", "平面设计", "视频制作", "产品建模", "室内设计", "机电绘图", "网页制作", "其他咨询"],
-                    index=["办公应用", "平面设计", "视频制作", "产品建模", "室内设计", "机电绘图", "网页制作", "其他咨询"].index(row["意向课程"]))
-                edit_level = st.radio("电脑基础", ["零基础", "有一点基础", "有一定基础"],
-                    index=["零基础", "有一点基础", "有一定基础"].index(row["电脑基础"]))
-                edit_remark = st.text_area("备注", value=row["备注"])
-
-                col_btn1, col_btn2 = st.columns(2)
-                with col_btn1:
-                    save_edit = st.form_submit_button("✅ 保存修改")
-                with col_btn2:
-                    del_row = st.form_submit_button("🗑 删除本条记录")
-
-            if save_edit:
-                df.at[row_select, "姓名"] = edit_name
-                df.at[row_select, "电话"] = str(edit_phone)
-                df.at[row_select, "意向课程"] = edit_course
-                df.at[row_select, "电脑基础"] = edit_level
-                df.at[row_select, "备注"] = edit_remark
-                save_sign_data(df)
-                st.success("✅ 修改已保存！")
+                n = st.text_input("姓名", row["姓名"])
+                p = st.text_input("电话", row["电话"])
+                c = st.selectbox("意向课程", ["办公应用","平面设计","视频制作","产品建模","室内设计","机电绘图","网页制作","其他咨询"],
+                                index=["办公应用","平面设计","视频制作","产品建模","室内设计","机电绘图","网页制作","其他咨询"].index(row["意向课程"]))
+                l = st.radio("电脑基础", ["零基础","有一点基础","有一定基础"],
+                            index=["零基础","有一点基础","有一定基础"].index(row["电脑基础"]))
+                r = st.text_area("备注", row["备注"])
+                c1, c2 = st.columns(2)
+                with c1:
+                    save_btn = st.form_submit_button("保存修改")
+                with c2:
+                    del_btn = st.form_submit_button("删除本条")
+            if save_btn:
+                update_sign_record(row["record_id"], n, p, c, l, r)
+                st.success("✅ 修改成功")
                 st.rerun()
-
-            if del_row:
-                df = df.drop(row_select).reset_index(drop=True)
-                save_sign_data(df)
-                st.success("🗑 本条记录已删除！")
+            if del_btn:
+                delete_sign_record(row["record_id"])
+                st.success("✅ 删除成功")
                 st.rerun()
-
-            st.markdown("---")
-            st.subheader("⚠️ 危险操作")
-            if st.button("🚮 清空所有报名记录", type="primary"):
-                df_empty = pd.DataFrame(columns=["提交时间","姓名","电话","意向课程","电脑基础","备注"])
-                save_sign_data(df_empty)
-                st.warning("✅ 已清空全部记录！")
+            if st.button("🚮 清空所有记录"):
+                clear_all_sign()
+                st.success("✅ 已清空全部记录")
                 st.rerun()
-
         if st.button("退出登录"):
             st.session_state.admin_logged_in = False
-            st.session_state.edit_idx = None
             st.rerun()
 
-# ----------------------
-# 底部信息
-# ----------------------
+# 底部侧边栏信息
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 📞 联系我们")
 st.sidebar.write("☎ 电话：020-82709166")
@@ -474,9 +467,7 @@ st.sidebar.write("🏫 地址：广州市增城区新塘镇")
 st.sidebar.write("💻 塘泽教育 · 学会为止")
 st.sidebar.write("📱 微信：同手机号18022864206")
 
+# 底部统计 & 版权
 st.markdown("---")
-col_visit = st.columns([1, 2, 1])
-with col_visit[1]:
-    st.info(f"👀 网站累计访问人数：{count} 次")
-
+st.info(f"👀 网站累计访问：{total_count} 次")
 st.markdown("© 2026 塘泽教育 版权所有")
