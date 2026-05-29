@@ -142,7 +142,7 @@ else:
 col_logo, col_title = st.columns([1, 6])
 with col_logo:
     try:
-        st.image("logo.png", width=150)
+        st.image("logo.png", width=200)
     except:
         pass
 with col_title:
@@ -200,6 +200,9 @@ if menu == "🏠 学校首页":
     ⚙️ **机电绘图类**：CAD、CREO、SW、EPLAN  
     🌐 **网页制作类**：DW、VSCode、Python+Streamlit  
     """)
+    # 视频演示（如果有文件就取消注释）
+    st.subheader("🎬 教学视频简介")
+    st.video("diannao.mp4")
 
 # 办公应用
 elif menu == "📝 办公应用":
