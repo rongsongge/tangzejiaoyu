@@ -171,6 +171,7 @@ menu = st.sidebar.radio(
 # 首页
 if menu == "🏠 学校首页":
     st.title("💻 塘泽教育 — 欢迎您！")
+    st.image("tanze.jpg", use_container_width=True)
     st.markdown("---")
     col1, col2 = st.columns([2, 1])
     with col1:
