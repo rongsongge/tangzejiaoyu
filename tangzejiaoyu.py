@@ -208,6 +208,7 @@ if menu == "🏠 学校首页":
 # 办公应用
 elif menu == "📝 办公应用":
     st.title("📝 办公应用培训课程")
+    st.image("bangong.jpg", use_container_width=True)
     st.markdown("---")
     st.subheader("适合人群：文员、行政、财务、助理、职场新人、企业办公人员")
     st.info("零基础学习，轻松掌握办公自动化+企业协同办公")
@@ -361,6 +362,7 @@ elif menu == "💰 课程价格":
 # 老师介绍
 elif menu == "👨‍🏫 老师介绍":
     st.title("👨‍🏫 专业师资团队")
+    st.image("jiaosi.jpg", use_container_width=True)
     st.markdown("---")
     col1, col2 = st.columns(2)
     with col1:
