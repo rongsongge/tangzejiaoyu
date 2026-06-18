@@ -226,6 +226,7 @@ elif menu == "📝 办公应用":
 # 平面设计
 elif menu == "🎨 平面设计":
     st.title("🎨 平面设计培训课程")
+    st.image("pinmian.jpg", use_container_width=True)
     st.markdown("---")
     st.subheader("适合人群：设计师、广告、图文店、美工、创业者")
     st.info("零基础可学，学成可接单、就业")
