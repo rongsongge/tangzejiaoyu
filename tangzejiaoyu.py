@@ -288,6 +288,7 @@ elif menu == "🏠 室内设计":
 # 机电绘图
 elif menu == "⚙️ 机电绘图":
     st.title("⚙️ 机电绘图培训课程")
+    st.image("jidian.jpg", use_container_width=True)
     st.markdown("---")
     st.subheader("适合人群：机械、电工、设备、模具、钣金行业")
     st.info("企业实战教学，就业面广")
