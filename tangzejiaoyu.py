@@ -271,6 +271,7 @@ elif menu == "📦 产品建模":
 # 室内设计
 elif menu == "🏠 室内设计":
     st.title("🏠 室内设计培训课程")
+    st.image("shilei.jpg", use_container_width=True)
     st.markdown("---")
     st.subheader("适合人群：室内设计师、装修行业、全屋定制")
     st.info("从量房到效果图，全流程教学")
