@@ -243,6 +243,7 @@ elif menu == "🎨 平面设计":
 # 视频制作
 elif menu == "🎬 视频制作":
     st.title("🎬 视频制作培训课程")
+    st.image("jianji.jpg", use_container_width=True)
     st.markdown("---")
     st.subheader("适合人群：短视频创作者、剪辑师、新媒体运营、影视爱好者")
     st.info("零基础入门，掌握短视频、宣传片、特效制作全流程")
@@ -305,6 +306,7 @@ elif menu == "⚙️ 机电绘图":
 # 网页制作
 elif menu == "🌐 网页制作":
     st.title("🌐 网页制作培训课程")
+    st.image("wanyei.jpg", use_container_width=True)
     st.markdown("---")
     st.subheader("适合人群：零基础想做网站、小程序、个人网页的学员")
     st.info("从入门基础到实战，学会自己做网站！")
@@ -320,6 +322,7 @@ elif menu == "🌐 网页制作":
 # 课程价格
 elif menu == "💰 课程价格":
     st.title("💰 课程价格表")
+    st.image("zisi.jpg", use_container_width=True)
     st.markdown("---")
     price_data = {
         "课程类别": ["办公应用", "办公应用", "办公应用", "办公应用", "办公应用",
