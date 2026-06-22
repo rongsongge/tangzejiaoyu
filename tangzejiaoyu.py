@@ -259,6 +259,7 @@ elif menu == "🎬 视频制作":
 # 产品建模
 elif menu == "📦 产品建模":
     st.title("📦 产品建模培训课程")
+    st.image("canpin.jpg", use_container_width=True)
     st.markdown("---")
     st.subheader("适合人群：电商美工、产品设计师、3D建模爱好者、动画行业")
     st.info("掌握产品建模、渲染、动画制作，打造电商爆款主图")
